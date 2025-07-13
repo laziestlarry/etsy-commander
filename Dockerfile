@@ -2,8 +2,6 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-
-# Set a proper HOME so Streamlit picks up configs
 ENV HOME="/root"
 
 WORKDIR /app
@@ -14,7 +12,7 @@ RUN pip install --upgrade pip \
   && pip install streamlit fastapi uvicorn playwright \
   && playwright install --with-deps
 
-# Add stable Streamlit config
+# Disable problematic headers and static asset compression
 RUN mkdir -p $HOME/.streamlit && \
     echo "\
 [server]\n\
@@ -22,6 +20,7 @@ headless = true\n\
 enableCORS = false\n\
 enableXsrfProtection = false\n\
 enableWebsocketCompression = false\n\
+enableStaticServing = false\n\
 " > $HOME/.streamlit/config.toml
 
 EXPOSE 8080

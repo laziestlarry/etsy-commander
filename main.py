@@ -12,8 +12,12 @@ app = FastAPI()
 def run_streamlit():
     subprocess.run([
         "streamlit", "run", "growth_dashboard.py",
-        "--server.port=8080",  # 👈 MUST match Cloud Run
-        "--server.address=0.0.0.0"
+        "--server.port=8080",
+        "--server.address=0.0.0.0",
+        "--server.enableStaticServing=false",
+        "--server.enableCORS=false",
+        "--server.enableXsrfProtection=false",
+        "--server.enableWebsocketCompression=false"
     ])
 
 @app.on_event("startup")
