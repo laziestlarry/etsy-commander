@@ -1,9 +1,8 @@
-name: Deploy Etsy Commander to Cloud Run
+name: Direct Docker Deploy to Cloud Run
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -13,20 +12,28 @@ jobs:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v3
 
-      - name: 🔐 Authenticate to Google Cloud
+      - name: 🔐 Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT }}'
 
-      - name: ☁️ Set up Google Cloud SDK
+      - name: ☁️ Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ai-commander-205
-          install_components: 'beta'
+          install_components: docker
 
-      - name: 🐳 Build & Push Docker image
+      - name: 🐳 Authenticate Docker with Artifact Registry
         run: |
-          gcloud builds submit --tag us-central1-docker.pkg.dev/ai-commander-205/docker-repo/etsy-commander .
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: 🧱 Build Docker image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/ai-commander-205/docker-repo/etsy-commander .
+
+      - name: 📦 Push Docker image to Artifact Registry
+        run: |
+          docker push us-central1-docker.pkg.dev/ai-commander-205/docker-repo/etsy-commander
 
       - name: 🚀 Deploy to Cloud Run
         run: |
