@@ -1,8 +1,5 @@
-# Dockerfile — Etsy Commander with FastAPI + Streamlit hybrid
-
 FROM python:3.11-slim
 
-# Avoid prompts
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
@@ -15,8 +12,10 @@ RUN pip install --upgrade pip \
   && pip install streamlit fastapi uvicorn playwright \
   && playwright install --with-deps
 
-# Expose Cloud Run default port
+# Fix Accept-CH and disable websocket compression
+RUN mkdir -p ~/.streamlit && \
+    echo "[server]\nheadless = true\nenableCORS = false\nenableXsrfProtection = false\nenableWebsocketCompression = false\n" > ~/.streamlit/config.toml
+
 EXPOSE 8080
 
-# Run main FastAPI + Streamlit hybrid server
 CMD ["python", "main.py"]
