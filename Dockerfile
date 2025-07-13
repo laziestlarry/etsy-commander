@@ -3,8 +3,10 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-WORKDIR /app
+# Set a proper HOME so Streamlit picks up configs
+ENV HOME="/root"
 
+WORKDIR /app
 COPY . /app
 
 # Install dependencies
@@ -12,9 +14,15 @@ RUN pip install --upgrade pip \
   && pip install streamlit fastapi uvicorn playwright \
   && playwright install --with-deps
 
-# Fix Accept-CH and disable websocket compression
-RUN mkdir -p ~/.streamlit && \
-    echo "[server]\nheadless = true\nenableCORS = false\nenableXsrfProtection = false\nenableWebsocketCompression = false\n" > ~/.streamlit/config.toml
+# Add stable Streamlit config
+RUN mkdir -p $HOME/.streamlit && \
+    echo "\
+[server]\n\
+headless = true\n\
+enableCORS = false\n\
+enableXsrfProtection = false\n\
+enableWebsocketCompression = false\n\
+" > $HOME/.streamlit/config.toml
 
 EXPOSE 8080
 
