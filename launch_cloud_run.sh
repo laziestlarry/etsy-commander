@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# 🚀 Etsy Commander - Cloud Deployment Script (GCP + GitHub Integration)
+# Assumes Google Cloud CLI (gcloud) and Git are already installed
+
+### 1. CONFIGURATION
+PROJECT_ID="ai-commander-205"
+REGION="us-central1"
+SERVICE_NAME="etsy-commander"
+REPO_NAME="etsy-commander"
+GITHUB_USER="laziestlarry"
+
+### 2. GCP LOGIN + PROJECT SETUP
+echo "🔐 Authenticating with Google Cloud..."
+gcloud auth login --brief || { echo "❌ GCloud auth failed"; exit 1; }
+
+PROJECT_EXISTS=$(gcloud projects list --filter="projectId=$PROJECT_ID" --format="value(projectId)")
+if [ "$PROJECT_EXISTS" != "$PROJECT_ID" ]; then
+  echo "🛠️ Creating GCP project: $PROJECT_ID"
+  gcloud projects create $PROJECT_ID --name="AI Commander 205"
+fi
+
+gcloud config set project $PROJECT_ID
+
+### 3. ENABLE GCP SERVICES
+echo "🔧 Enabling required GCP services..."
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com
+
+### 4. CREATE ARTIFACT REGISTRY (IF NEEDED)
+echo "📦 Checking artifact registry..."
+gcloud artifacts repositories create docker-repo \
+  --repository-format=docker \
+  --location=$REGION \
+  --description="Docker repo for Etsy Commander" || true
+
+### 5. BUILD DOCKER IMAGE
+echo "🐳 Building Docker image..."
+gcloud builds submit --tag $REGION-docker.pkg.dev/$PROJECT_ID/docker-repo/$SERVICE_NAME
+
+### 6. DEPLOY TO CLOUD RUN
+echo "🚀 Deploying to Cloud Run..."
+gcloud run deploy $SERVICE_NAME \
+  --image=$REGION-docker.pkg.dev/$PROJECT_ID/docker-repo/$SERVICE_NAME \
+  --platform=managed \
+  --region=$REGION \
+  --allow-unauthenticated
+
+### 7. GITHUB AUTH + PUSH
+echo "🔐 Authenticating with GitHub (PAT required if private)..."
+git config --global user.name "$GITHUB_USER"
+git config --global user.email "$GITHUB_USER@users.noreply.github.com"
+
+if [ ! -d ".git" ]; then
+  git init
+  git remote add origin https://github.com/$GITHUB_USER/$REPO_NAME.git
+fi
+
+git add .
+git commit -m "Initial deploy of Etsy Commander" || echo "⚠️ Nothing new to commit"
+git branch -M main
+git push -u origin main || echo "⚠️ GitHub push failed. Check repo access."
+
+### 8. DONE
+echo "✅ Deployment complete!"
+SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format='value(status.url)')
+echo "🌐 Access your app at: $SERVICE_URL"
