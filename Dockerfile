@@ -1,27 +1,22 @@
-# Dockerfile — Etsy Commander Cloud Container
+# Dockerfile — Etsy Commander with FastAPI + Streamlit hybrid
 
-# Use official Python image
 FROM python:3.11-slim
 
-# Set work directory
+# Avoid prompts
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy project files
 COPY . /app
 
-# Install Python dependencies
-RUN pip install --upgrade pip
-RUN pip install streamlit playwright && playwright install chromium
+# Install dependencies
+RUN pip install --upgrade pip \
+  && pip install streamlit fastapi uvicorn playwright \
+  && playwright install --with-deps
 
-# Expose port for Streamlit
-EXPOSE 8501
+# Expose Cloud Run default port
+EXPOSE 8080
 
-# Start app
-CMD ["streamlit", "run", "growth_dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Run main FastAPI + Streamlit hybrid server
+CMD ["python", "main.py"]
