@@ -1,4 +1,4 @@
-# main.py — FastAPI + Streamlit hybrid server
+# main.py — FastAPI + Streamlit hybrid server for Cloud Run
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -8,11 +8,12 @@ import threading
 
 app = FastAPI()
 
-# Background thread to launch Streamlit UI
+# Background thread to launch Streamlit UI on port 8080
 def run_streamlit():
     subprocess.run([
         "streamlit", "run", "growth_dashboard.py",
-        "--server.port=8501", "--server.address=0.0.0.0"
+        "--server.port=8080",  # 👈 MUST match Cloud Run
+        "--server.address=0.0.0.0"
     ])
 
 @app.on_event("startup")
@@ -21,11 +22,11 @@ def startup_event():
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/dashboard")
+    return RedirectResponse(url="/")
 
 @app.get("/dashboard")
 async def dashboard():
-    return {"message": "Etsy Commander dashboard running at /dashboard (Streamlit served separately)"}
+    return {"message": "Etsy Commander dashboard active at /"}
 
 @app.get("/status")
 async def status():
